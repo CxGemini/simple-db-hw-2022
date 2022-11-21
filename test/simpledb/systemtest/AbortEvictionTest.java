@@ -13,6 +13,8 @@ import simpledb.common.Utility;
 import simpledb.execution.Insert;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
+import simpledb.storage.iterator.TupleIterator;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 

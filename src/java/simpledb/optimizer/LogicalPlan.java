@@ -6,6 +6,7 @@ import simpledb.common.Database;
 import simpledb.common.Type;
 import simpledb.execution.*;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.TransactionId;
 
 import java.io.File;

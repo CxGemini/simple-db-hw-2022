@@ -4,7 +4,7 @@ import simpledb.common.Database;
 import simpledb.common.Permissions;
 import simpledb.index.*;
 import simpledb.storage.BufferPool;
-import simpledb.storage.DbFileIterator;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.execution.Predicate.Op;
 
 import java.util.*;

@@ -13,7 +13,7 @@ import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Utility;
 import simpledb.execution.Predicate;
-import simpledb.storage.HeapFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.storage.IntField;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;

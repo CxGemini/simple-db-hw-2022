@@ -14,7 +14,7 @@ import simpledb.execution.Join;
 import simpledb.execution.JoinPredicate;
 import simpledb.execution.Predicate;
 import simpledb.execution.SeqScan;
-import simpledb.storage.HeapFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

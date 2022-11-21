@@ -14,6 +14,8 @@ import simpledb.common.*;
 import simpledb.execution.OpIterator;
 import simpledb.execution.SeqScan;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.DbFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
@@ -124,6 +126,7 @@ public class SystemTestUtil {
         }
 
         iterator.open();
+
         while (iterator.hasNext()) {
             Tuple t = iterator.next();
             List<Integer> list = tupleToList(t);

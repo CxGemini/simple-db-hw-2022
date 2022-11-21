@@ -4,7 +4,7 @@ import simpledb.common.Database;
 import simpledb.common.Permissions;
 import simpledb.execution.IndexPredicate;
 import simpledb.index.*;
-import simpledb.storage.DbFileIterator;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.storage.Field;
 import simpledb.storage.IntField;
 import simpledb.systemtest.SimpleDbTestBase;

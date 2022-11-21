@@ -1,6 +1,7 @@
-package simpledb.storage;
+package simpledb.storage.iterator;
 
 import simpledb.common.DbException;
+import simpledb.storage.Tuple;
 import simpledb.transaction.TransactionAbortedException;
 
 import java.util.NoSuchElementException;

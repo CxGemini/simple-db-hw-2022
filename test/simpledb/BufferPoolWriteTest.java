@@ -16,6 +16,8 @@ import simpledb.common.DbException;
 import simpledb.common.Permissions;
 import simpledb.common.Utility;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.systemtest.SystemTestUtil;
 import static org.junit.Assert.*;
 import junit.framework.JUnit4TestAdapter;

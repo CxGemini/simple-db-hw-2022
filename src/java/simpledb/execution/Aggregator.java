@@ -1,7 +1,7 @@
 package simpledb.execution;
 
 import simpledb.storage.Tuple;
-import simpledb.storage.TupleIterator;
+import simpledb.storage.iterator.TupleIterator;
 
 import java.io.Serializable;
 

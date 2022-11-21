@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 

@@ -7,6 +7,9 @@ import simpledb.common.Permissions;
 import simpledb.execution.IndexPredicate;
 import simpledb.execution.Predicate.Op;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.DbFile;
+import simpledb.storage.iterator.AbstractDbFileIterator;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

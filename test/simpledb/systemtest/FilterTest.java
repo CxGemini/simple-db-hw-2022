@@ -6,7 +6,7 @@ import simpledb.common.DbException;
 import simpledb.execution.Filter;
 import simpledb.execution.Predicate;
 import simpledb.execution.SeqScan;
-import simpledb.storage.HeapFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

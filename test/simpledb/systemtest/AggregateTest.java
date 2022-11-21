@@ -12,8 +12,8 @@ import simpledb.common.DbException;
 import simpledb.execution.Aggregate;
 import simpledb.execution.Aggregator;
 import simpledb.execution.SeqScan;
-import simpledb.storage.DbFile;
-import simpledb.storage.HeapFile;
+import simpledb.storage.dbfile.DbFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

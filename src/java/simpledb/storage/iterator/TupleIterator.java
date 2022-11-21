@@ -1,6 +1,8 @@
-package simpledb.storage;
+package simpledb.storage.iterator;
 
 import simpledb.execution.OpIterator;
+import simpledb.storage.Tuple;
+import simpledb.storage.TupleDesc;
 
 import java.util.Iterator;
 

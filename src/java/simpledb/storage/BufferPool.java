@@ -2,15 +2,14 @@ package simpledb.storage;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.DeadlockException;
 import simpledb.common.Permissions;
+import simpledb.storage.dbfile.DbFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -38,13 +37,16 @@ public class BufferPool {
      */
     public static final int DEFAULT_PAGES = 50;
 
+    private final int numPages;
+    private final Map<PageId, Page> bufferPool = new ConcurrentHashMap<>();
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        // TODO: some code goes here
+        // some code goes here
+        this.numPages = numPages;
     }
 
     public static int getPageSize() {
@@ -78,8 +80,16 @@ public class BufferPool {
      */
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
             throws TransactionAbortedException, DbException {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
+        // TODO 事务..
+        // bufferPool应直接放在直接内存
+       if(!bufferPool.containsKey(pid)){
+           DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+           Page page = file.readPage(pid);
+           bufferPool.put(pid,page);
+        }
+       return bufferPool.get(pid);
+
     }
 
     /**

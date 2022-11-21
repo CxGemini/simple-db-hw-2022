@@ -9,18 +9,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import simpledb.common.Database;
-import simpledb.common.DbException;
 import simpledb.common.Utility;
 import simpledb.execution.Predicate;
 import simpledb.optimizer.JoinOptimizer;
 import simpledb.optimizer.LogicalJoinNode;
 import simpledb.optimizer.TableStats;
 import simpledb.storage.BufferPool;
-import simpledb.storage.HeapFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.storage.HeapFileEncoder;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.systemtest.SystemTestUtil;
-import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 public class JoinOptimizerTest extends SimpleDbTestBase {

@@ -3,6 +3,10 @@ package simpledb;
 import simpledb.common.*;
 import simpledb.execution.OpIterator;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.DbFile;
+import simpledb.storage.dbfile.HeapFile;
+import simpledb.storage.iterator.DbFileIterator;
+import simpledb.storage.iterator.TupleIterator;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

@@ -4,6 +4,8 @@ import simpledb.common.DbException;
 import simpledb.common.Type;
 import simpledb.common.Utility;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.DbFile;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

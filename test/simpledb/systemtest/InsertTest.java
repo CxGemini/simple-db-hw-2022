@@ -10,7 +10,7 @@ import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.execution.Insert;
 import simpledb.execution.SeqScan;
-import simpledb.storage.HeapFile;
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
 import simpledb.transaction.TransactionAbortedException;

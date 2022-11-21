@@ -2,6 +2,7 @@ package simpledb.storage;
 
 import simpledb.common.Type;
 import simpledb.common.Utility;
+import simpledb.storage.dbfile.HeapFile;
 
 import java.io.*;
 import java.util.Arrays;

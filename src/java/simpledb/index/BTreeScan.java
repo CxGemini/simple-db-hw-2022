@@ -5,7 +5,7 @@ import simpledb.common.DbException;
 import simpledb.common.Type;
 import simpledb.execution.IndexPredicate;
 import simpledb.execution.OpIterator;
-import simpledb.storage.DbFileIterator;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;

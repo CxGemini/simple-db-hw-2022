@@ -17,6 +17,7 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import simpledb.storage.dbfile.HeapFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

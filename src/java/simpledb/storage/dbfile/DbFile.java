@@ -1,7 +1,9 @@
-package simpledb.storage;
+package simpledb.storage.dbfile;
 
 import simpledb.common.Catalog;
 import simpledb.common.DbException;
+import simpledb.storage.*;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 

@@ -3,6 +3,8 @@ package simpledb;
 import simpledb.common.Database;
 import simpledb.common.Utility;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.systemtest.SystemTestUtil;
 

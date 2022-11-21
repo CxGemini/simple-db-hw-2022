@@ -5,6 +5,7 @@ import simpledb.common.Utility;
 import simpledb.execution.IndexPredicate;
 import simpledb.index.*;
 import simpledb.storage.*;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.systemtest.SimpleDbTestBase;
 import simpledb.execution.Predicate.Op;
 

@@ -1,6 +1,7 @@
 package simpledb.common;
 
 import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
 
 import java.io.File;
 import java.io.FileOutputStream;

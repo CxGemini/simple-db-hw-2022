@@ -8,14 +8,26 @@ import java.util.Objects;
 public class HeapPageId implements PageId {
 
     /**
+     * The table that is being referenced
+     */
+    private int tableId;
+
+    /**
+     * The page number in that table.
+     */
+    private int pgNo;
+    /**
      * Constructor. Create a page id structure for a specific page of a
      * specific table.
-     *
+     * 理解为是表id（HeapPageId)与其子页的关系映射的数据结构
+     * 如表1-1 表1-2...
      * @param tableId The table that is being referenced
      * @param pgNo    The page number in that table.
      */
     public HeapPageId(int tableId, int pgNo) {
-        // TODO: some code goes here
+        //  some code goes here
+        this.tableId = tableId;
+        this.pgNo = pgNo;
     }
 
     /**
@@ -23,7 +35,7 @@ public class HeapPageId implements PageId {
      */
     public int getTableId() {
         // TODO: some code goes here
-        return 0;
+        return tableId;
     }
 
     /**
@@ -32,7 +44,15 @@ public class HeapPageId implements PageId {
      */
     public int getPageNumber() {
         // TODO: some code goes here
-        return 0;
+        return pgNo;
+    }
+
+    public void setTableId(int tableId){
+        this.tableId = tableId;
+    }
+
+    public void setPgNo(int pgNo){
+        this.pgNo = pgNo;
     }
 
     /**
@@ -43,7 +63,8 @@ public class HeapPageId implements PageId {
      */
     public int hashCode() {
         // TODO: some code goes here
-        throw new UnsupportedOperationException("implement this");
+        // throw new UnsupportedOperationException("implement this");
+        return getPageNumber()*1000 + getTableId();
     }
 
     /**
@@ -55,6 +76,12 @@ public class HeapPageId implements PageId {
      */
     public boolean equals(Object o) {
         // TODO: some code goes here
+        if (!(o instanceof  HeapPageId)) { return false; }
+
+        HeapPageId other = (HeapPageId) o;
+        if (this.getPageNumber() == other.getPageNumber() && this.getTableId() == other.getTableId()) {
+            return true;
+        }
         return false;
     }
 

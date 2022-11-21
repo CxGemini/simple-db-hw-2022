@@ -6,6 +6,8 @@ import simpledb.common.Type;
 import simpledb.common.Utility;
 import simpledb.execution.Predicate.Op;
 import simpledb.storage.*;
+import simpledb.storage.dbfile.HeapFile;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;

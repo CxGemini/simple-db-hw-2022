@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import simpledb.index.BTreeUtility.*;
 import simpledb.execution.Predicate.Op;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.transaction.TransactionId;
 
 /**

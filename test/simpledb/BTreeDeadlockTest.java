@@ -9,7 +9,7 @@ import simpledb.index.BTreeRootPtrPage;
 import simpledb.index.BTreeUtility;
 import simpledb.index.BTreeUtility.*;
 import simpledb.storage.BufferPool;
-import simpledb.storage.DbFileIterator;
+import simpledb.storage.iterator.DbFileIterator;
 import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
 import simpledb.systemtest.SimpleDbTestBase;
