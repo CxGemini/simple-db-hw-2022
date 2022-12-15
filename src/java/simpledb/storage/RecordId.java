@@ -28,7 +28,7 @@ public class RecordId implements Serializable {
      * @param tupleno the tuple number within the page.
      */
     public RecordId(PageId pid, int tupleno) {
-        // TODO: some code goes here
+        // some code goes here
         this.pid = pid;
         this.tupleNo = tupleno;
     }
@@ -37,7 +37,7 @@ public class RecordId implements Serializable {
      * @return the tuple number this RecordId references.
      */
     public int getTupleNumber() {
-        // TODO: some code goes here
+        // some code goes here
         return tupleNo;
     }
 
@@ -45,7 +45,7 @@ public class RecordId implements Serializable {
      * @return the page id this RecordId references.
      */
     public PageId getPageId() {
-        // TODO: some code goes here
+        // some code goes here
         return pid;
     }
 

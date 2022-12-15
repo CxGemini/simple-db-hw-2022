@@ -1,6 +1,5 @@
 package simpledb.storage;
 
-import simpledb.LogUtils;
 import simpledb.common.Catalog;
 import simpledb.common.Database;
 import simpledb.common.DbException;
@@ -41,6 +40,16 @@ public class HeapPage implements Page {
 
     byte[] oldData;
     private final Byte oldDataLock = (byte) 0;
+
+    /**
+     * 事务的量大可转队列
+     */
+    private TransactionId dirtyTid;
+
+    /**
+     *  if the page is dirty
+    */
+    private boolean dirtyFlag;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -101,6 +110,7 @@ public class HeapPage implements Page {
      */
     private int getHeaderSize() {
         // some code goes here
+        // 向上取整
         return (int) Math.ceil((double) getNumTuples() / 8);
 
     }
@@ -268,8 +278,22 @@ public class HeapPage implements Page {
      *                     already empty.
      */
     public void deleteTuple(Tuple t) throws DbException {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1
+        int tid = t.getRecordId().getTupleNumber();
+        boolean flag = false;
+        for (int i = 0; i < tuples.length; i++) {
+            if (t.equals(tuples[i])){
+                if(!isSlotUsed(i))
+                    throw new DbException("The tuple slot is already empty !!!");
+                markSlotUsed(i,false);
+                tuples[tid] = null;
+                flag = true;
+            }
+        }
+        if(!flag)
+            throw new DbException("Tuple does not exist !!!");
+
     }
 
     /**
@@ -281,8 +305,21 @@ public class HeapPage implements Page {
      *                     is mismatch.
      */
     public void insertTuple(Tuple t) throws DbException {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1
+        //  mismatch : int，int，String的表插入了一条 String,String,String
+        if(getNumUnusedSlots() == 0 || !t.getTupleDesc().equals(td)){
+            throw new DbException("the page is full (no empty slots) or tupleDesc is mismatch.");
+        }
+        for(int i=0;i<numSlots;++i){
+            if(!isSlotUsed(i)){
+                markSlotUsed(i,true);
+                t.setRecordId(new RecordId(pid,i));
+                tuples[i] = t;
+                break;
+            }
+        }
+
     }
 
     /**
@@ -290,17 +327,19 @@ public class HeapPage implements Page {
      * that did the dirtying
      */
     public void markDirty(boolean dirty, TransactionId tid) {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1
+        this.dirtyFlag  = dirty;
+        this.dirtyTid = tid;
     }
 
     /**
      * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
      */
     public TransactionId isDirty() {
-        // TODO: some code goes here
+        // some code goes here
         // Not necessary for lab1
-        return null;      
+        return this.dirtyFlag ? this.dirtyTid : null ;
     }
 
     /**
@@ -321,6 +360,7 @@ public class HeapPage implements Page {
 
     /**
      * Returns true if associated slot on this page is filled.
+     * i 为tuples的 index
      */
     public boolean isSlotUsed(int i) {
         // some code goes here
@@ -336,8 +376,20 @@ public class HeapPage implements Page {
      * Abstraction to fill or clear a slot on this page.
      */
     private void markSlotUsed(int i, boolean value) {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1
+        int iTh = i / 8;
+        // 计算具体在bitmap中的位置
+        int bitTh = i % 8;
+        int onBit = (header[iTh] >> bitTh) & 1;
+
+        // 需要改变的情况
+        if(onBit == 0 && value){
+            header[iTh] += (1 << bitTh);
+        }else if(onBit == 1 && !value){
+            header[iTh] -= (1 << bitTh);
+        }
+
     }
 
     /**

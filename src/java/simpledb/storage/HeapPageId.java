@@ -22,7 +22,7 @@ public class HeapPageId implements PageId {
      * 理解为是表id（HeapPageId)与其子页的关系映射的数据结构
      * 如表1-1 表1-2...
      * @param tableId The table that is being referenced
-     * @param pgNo    The page number in that table.
+     * @param pgNo    The page number in that table.Base index : 0
      */
     public HeapPageId(int tableId, int pgNo) {
         //  some code goes here

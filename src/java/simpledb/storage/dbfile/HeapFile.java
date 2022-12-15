@@ -10,9 +10,7 @@ import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * HeapFile is an implementation of a DbFile that stores a collection of tuples
@@ -74,21 +72,21 @@ public class HeapFile implements DbFile {
         @Override
         public boolean hasNext() throws DbException, TransactionAbortedException {
             // TODO Auto-generated method stub
+
             if(tupleIterator == null){
                 return false;
             }
 
-            if(tupleIterator.hasNext()){
-                return true;
-            }else{
-                if(index < (heapFile.numPages()-1)){
-                    index++;
+            while(!tupleIterator.hasNext()){
+                index++;
+                if(index < heapFile.numPages()){
                     tupleIterator = getTupleIterator(index);
-                    return tupleIterator.hasNext();
                 }else{
                     return false;
                 }
             }
+            return true;
+
         }
 
         @Override
@@ -200,34 +198,70 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1
+        PageId pageId = page.getId();
+        int pageNo = pageId.getPageNumber();
+        int offset = pageNo * BufferPool.getPageSize();
+        byte[] pageData = page.getPageData();
+
+        RandomAccessFile file = new RandomAccessFile(this.f, "rw");
+        file.seek(offset);
+        file.write(pageData);
+        file.close();
+
+        page.markDirty(false, null);
     }
 
     /**
-     * Returns the number of pages in this HeapFile.
+     * Returns the number of pages in this HeapFile，not page index;
      */
     public int numPages() {
         // some code goes here
-        // 通过文件长度算出所在bufferPool所需的页数
-        System.out.println(String.format("file length :「 %d 」,BufferPool PageSize :「 %d 」 ",getFile().length(),BufferPool.getPageSize()));
+        // 通过文件长度算出所在bufferPool所需的页数（Math.floor是向下取整）
         return (int) Math.floor(getFile().length() * 1.0 / BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
         // not necessary for lab1
+        ArrayList<Page> pageList= new ArrayList<Page>();
+        for(int i=0;i<numPages();++i){
+            // took care of getting new page
+            HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid,
+                    new HeapPageId(this.getId(),i),Permissions.READ_WRITE);
+            if(p.getNumUnusedSlots() == 0)
+                continue;
+            p.insertTuple(t);
+            pageList.add(p);
+            return pageList;
+        }
+        // 如果现有的页都没有空闲的slot，则新起一页
+        BufferedOutputStream bw = new BufferedOutputStream(new FileOutputStream(f,true));
+        byte[] emptyData = HeapPage.createEmptyPageData();
+        bw.write(emptyData);
+        bw.close();
+        // 加载进BufferPool
+        HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid,
+                new HeapPageId(getId(),numPages()-1),Permissions.READ_WRITE);
+        p.insertTuple(t);
+        pageList.add(p);
+        return pageList;
+
+
     }
 
     // see DbFile.java for javadocs
     public List<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
         // not necessary for lab1
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid,
+                t.getRecordId().getPageId(),Permissions.READ_WRITE);
+        page.deleteTuple(t);
+        return Collections.singletonList(page);
     }
 
     // see DbFile.java for javadocs

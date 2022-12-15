@@ -5,15 +5,15 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import simpledb.common.DbException;
 import simpledb.execution.Delete;
 import simpledb.execution.Filter;
 import simpledb.execution.Predicate;
 import simpledb.execution.SeqScan;
+import simpledb.storage.*;
 import simpledb.storage.dbfile.HeapFile;
-import simpledb.storage.IntField;
-import simpledb.storage.Tuple;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
@@ -66,4 +66,6 @@ public class DeleteTest extends FilterBase {
     public static junit.framework.Test suite() {
         return new junit.framework.JUnit4TestAdapter(DeleteTest.class);
     }
+
+
 }

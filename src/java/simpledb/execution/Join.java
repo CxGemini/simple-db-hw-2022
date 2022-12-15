@@ -14,6 +14,18 @@ public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private JoinPredicate joinPredicate;
+
+    private TupleDesc tupleDesc;
+
+    private Tuple curJoinTuple;
+
+    /**
+     * children[0]:需要连接的做操作符
+     * children[1]:需要连接的右操作符
+     */
+    private OpIterator[] children;
+
     /**
      * Constructor. Accepts two children to join and the predicate to join them
      * on
@@ -23,12 +35,18 @@ public class Join extends Operator {
      * @param child2 Iterator for the right(inner) relation to join
      */
     public Join(JoinPredicate p, OpIterator child1, OpIterator child2) {
-        // TODO: some code goes here
+        // some code goes here
+        this.joinPredicate = p;
+        this.children = new OpIterator[2];
+        this.children[0] = child1;
+        this.children[1] = child2;
+        this.tupleDesc = TupleDesc.merge(child1.getTupleDesc(),child2.getTupleDesc());
+
     }
 
     public JoinPredicate getJoinPredicate() {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
+        return joinPredicate;
     }
 
     /**
@@ -36,8 +54,8 @@ public class Join extends Operator {
      *         alias or table name.
      */
     public String getJoinField1Name() {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
+        return children[0].getTupleDesc().getFieldName(joinPredicate.getField1());
     }
 
     /**
@@ -45,8 +63,8 @@ public class Join extends Operator {
      *         alias or table name.
      */
     public String getJoinField2Name() {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
+        return children[1].getTupleDesc().getFieldName(joinPredicate.getField2());
     }
 
     /**
@@ -54,21 +72,29 @@ public class Join extends Operator {
      *         implementation logic.
      */
     public TupleDesc getTupleDesc() {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
+        return tupleDesc;
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // TODO: some code goes here
+        // some code goes here
+        super.open();
+        children[0].open();
+        children[1].open();
     }
 
     public void close() {
-        // TODO: some code goes here
+        // some code goes here
+        super.close();
+        children[0].close();
+        children[1].close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // TODO: some code goes here
+        // some code goes here
+        children[0].rewind();
+        children[1].rewind();
     }
 
     /**
@@ -90,19 +116,44 @@ public class Join extends Operator {
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // TODO: some code goes here
+        // some code goes here
+        while(children[0].hasNext() || curJoinTuple != null){
+            if(children[0].hasNext() && curJoinTuple == null){
+                curJoinTuple = children[0].next();
+            }
+            Tuple right;
+            while (children[1].hasNext()){
+                right = children[1].next();
+                if(joinPredicate.filter(curJoinTuple,right)){
+                    int len1 = curJoinTuple.getTupleDesc().numFields();
+                    int len2 = right.getTupleDesc().numFields();
+                    Tuple tuple = new Tuple(getTupleDesc());        //tuple的recordID应该设置成什么？
+                    for(int i=0; i<len1; i++){
+                        tuple.setField(i,curJoinTuple.getField(i));
+                    }
+                    for(int i=0; i<len2; i++){
+                        tuple.setField(i+len1,right.getField(i));
+                    }
+                    return tuple;
+                }
+            }
+            curJoinTuple = null;
+            children[1].rewind();
+        }
+
         return null;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // TODO: some code goes here
-        return null;
+        // some code goes here
+        return this.children;
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // TODO: some code goes here
+        // some code goes here
+        this.children = children;
     }
 
 }

@@ -51,7 +51,7 @@ public interface DbFile {
     /**
      * Removes the specified tuple from the file on behalf of the specified
      * transaction.
-     * This method will acquire a lock on the affected pages of the file, and
+     * This method will acquire a lock on the affected pages of the  file, and
      * may block until the lock can be acquired.
      *
      * @param tid The transaction performing the update
