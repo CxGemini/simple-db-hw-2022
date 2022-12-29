@@ -127,7 +127,7 @@ public class Join extends Operator {
                 if(joinPredicate.filter(curJoinTuple,right)){
                     int len1 = curJoinTuple.getTupleDesc().numFields();
                     int len2 = right.getTupleDesc().numFields();
-                    Tuple tuple = new Tuple(getTupleDesc());        //tuple的recordID应该设置成什么？
+                    Tuple tuple = new Tuple(getTupleDesc());
                     for(int i=0; i<len1; i++){
                         tuple.setField(i,curJoinTuple.getField(i));
                     }

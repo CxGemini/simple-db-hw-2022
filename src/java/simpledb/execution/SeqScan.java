@@ -2,6 +2,7 @@ package simpledb.execution;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
+import simpledb.common.Type;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.storage.iterator.DbFileIterator;
@@ -115,9 +116,14 @@ public class SeqScan implements OpIterator {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        TupleDesc tupleDesc = Database.getCatalog().getTupleDesc(tableId).clone();
-        tupleDesc.setTableAlias(tableAlias);
-        return tupleDesc;
+        TupleDesc oldDesc = Database.getCatalog().getTupleDesc(tableId);
+        String[] names = new String[oldDesc.numFields()];
+        Type[] types = new Type[oldDesc.numFields()];
+        for(int i = 0; i < oldDesc.numFields(); i++) {
+            names[i] = this.getAlias() + "." + oldDesc.getFieldName(i);
+            types[i] = oldDesc.getFieldType(i);
+        }
+        return new TupleDesc(types, names);
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {

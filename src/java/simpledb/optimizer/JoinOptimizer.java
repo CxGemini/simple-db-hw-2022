@@ -51,7 +51,7 @@ public class JoinOptimizer {
         try {
             t1id = plan1.getTupleDesc().indexForFieldName(lj.f1QuantifiedName);
         } catch (NoSuchElementException e) {
-            throw new ParsingException("Unknown field " + lj.f1QuantifiedName);
+            throw new ParsingException("lUnknown field " + lj.f1QuantifiedName);
         }
 
         if (lj instanceof LogicalSubplanJoinNode) {
@@ -105,7 +105,7 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            return cost1 + card1 * cost2 + card1 * card2;
         }
     }
 
@@ -144,7 +144,20 @@ public class JoinOptimizer {
                                                    boolean t2pkey, Map<String, TableStats> stats,
                                                    Map<String, Integer> tableAliasToId) {
         int card = 1;
-        // TODO: some code goes here
+        // some code goes here
+        if(joinOp == Predicate.Op.EQUALS){
+            if (t1pkey && !t2pkey) {
+                card = card2;
+            } else if (!t1pkey && t2pkey) {
+                card = card1;
+            } else if (t1pkey && t2pkey) {
+                card = Math.min(card1, card2);
+            } else {
+                card = Math.max(card1, card2);
+            }
+        } else {
+            card = (int) (0.3 * card1 * card2);
+        }
         return card <= 0 ? 1 : card;
     }
 
@@ -158,24 +171,22 @@ public class JoinOptimizer {
      */
     public <T> Set<Set<T>> enumerateSubsets(List<T> v, int size) {
         Set<Set<T>> els = new HashSet<>();
-        els.add(new HashSet<>());
-        // Iterator<Set> it;
-        // long start = System.currentTimeMillis();
-
-        for (int i = 0; i < size; i++) {
-            Set<Set<T>> newels = new HashSet<>();
-            for (Set<T> s : els) {
-                for (T t : v) {
-                    Set<T> news = new HashSet<>(s);
-                    if (news.add(t))
-                        newels.add(news);
-                }
-            }
-            els = newels;
-        }
-
+        dfs(els,v ,size, 0, new LinkedList<>());
         return els;
 
+    }
+    private <T> void dfs(Set<Set<T>> els, List<T> v, int size, int curIdx, Deque<T> path) {
+        if (path.size() == size) {
+            els.add(new HashSet<>(path));
+            return;
+        }
+        if (curIdx == size) {
+            return;
+        }
+        path.addFirst(v.get(curIdx));
+        dfs(els, v, size, curIdx + 1, path);
+        path.removeFirst();
+        dfs(els, v, size, curIdx + 1, path);
     }
 
     /**
@@ -200,7 +211,35 @@ public class JoinOptimizer {
             throws ParsingException {
         // Not necessary for labs 1 and 2.
 
-        // TODO: some code goes here
+        // some code goes here
+        CostCard bestCostCard = new CostCard();
+        PlanCache planCache = new PlanCache();
+        // 思路：通过辅助方法获取每个size下最优的连接顺序，不断加入planCache中
+        for (int i = 1; i <= joins.size(); i++) {
+            Set<Set<LogicalJoinNode>> subsets = enumerateSubsets(joins, i);
+            for (Set<LogicalJoinNode> set : subsets) {
+                double bestCostSoFar = Double.MAX_VALUE;
+                bestCostCard = new CostCard();
+                for (LogicalJoinNode logicalJoinNode : set) {
+                    //根据子计划找出最优的方案
+                    CostCard costCard = computeCostAndCardOfSubplan(stats, filterSelectivities, logicalJoinNode, set, bestCostSoFar, planCache);
+                    if (costCard == null) continue;
+                    bestCostSoFar = costCard.cost;
+                    bestCostCard = costCard;
+                }
+                if (bestCostSoFar != Double.MAX_VALUE) {
+                    planCache.addPlan(set, bestCostCard.cost, bestCostCard.card, bestCostCard.plan);
+                }
+            }
+        }
+        if (explain){
+            printJoins(bestCostCard.plan, planCache, stats, filterSelectivities);
+        }
+
+        // 如果joins传进来的长度为0，则计划就为空
+        if(bestCostCard.plan != null){
+            return bestCostCard.plan;
+        }
         return joins;
     }
 

@@ -11,10 +11,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class TupleDesc implements Serializable ,Cloneable{
 
-    /**
-     * 表的别名
-     */
-    private String tableAlias;
 
     CopyOnWriteArrayList<TDItem> tdItems;
 
@@ -128,9 +124,7 @@ public class TupleDesc implements Serializable ,Cloneable{
      * @throws NoSuchElementException if i is not a valid field reference.
      */
     public String getFieldName(int i) throws NoSuchElementException {
-        if(tableAlias != null){
-            return tableAlias+"."+tdItems.get(i).fieldName;
-        }
+
         // some code goes here
         return tdItems.get(i).fieldName;
     }
@@ -164,8 +158,11 @@ public class TupleDesc implements Serializable ,Cloneable{
         if(name == null){
             throw new NoSuchElementException("no field with a matching name is found.");
         }
+
+        String altName = name.substring(name.lastIndexOf(".")+1);
+        // 因为合并后的元组可能得不到别名因此去掉.前面的名字
         for (int i = 0; i < tdItems.size(); i++) {
-            if(name.equals(tdItems.get(i).fieldName)){
+            if(name.equals(getFieldName(i)) || altName.equals(getFieldName(i)) ){
                 return i;
             }
         }
@@ -209,6 +206,7 @@ public class TupleDesc implements Serializable ,Cloneable{
         for (int i = 0; i < td2.numFields(); i++) {
             tupleDesc.tdItems.add(td2.tdItems.get(i));
         }
+
         return tupleDesc;
     }
 
@@ -263,16 +261,11 @@ public class TupleDesc implements Serializable ,Cloneable{
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < this.numFields(); i++) {
             TDItem tdItem =  tdItems.get(i);
-            stringBuilder.append("(")
-                    .append(tdItem.fieldType.toString())
-                    .append("[").append(i).append("]")
-                    .append("(").append(tdItem.fieldName)
-                    .append("[").append(i).append("])");
+            stringBuilder.append(tdItem.fieldType.toString())
+                    .append("(").append(tdItem.fieldName).append("),");
         }
+        stringBuilder.deleteCharAt(stringBuilder.length()-1);
         return stringBuilder.toString();
     }
 
-    public void setTableAlias(String tableAlias){
-        this.tableAlias = tableAlias;
-    }
 }
