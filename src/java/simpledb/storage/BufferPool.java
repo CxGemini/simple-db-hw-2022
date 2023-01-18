@@ -1,5 +1,8 @@
 package simpledb.storage;
 
+import enums.LockType;
+import lombok.*;
+import simpledb.LogUtils;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Permissions;
@@ -8,6 +11,7 @@ import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,10 +39,15 @@ public class BufferPool {
      * Bytes per page, including header.
      */
     private static final int DEFAULT_PAGE_SIZE = 4096;
+    private static final int X_LOCK_WAIT = 100;
+    private static final int S_LOCK_WAIT = 100;
+    private static final int RETRY_MAX = 1;
     private static int pageSize = DEFAULT_PAGE_SIZE;
     private final int numPages;
 
     private LRUCache lruCache;
+
+    private LockManager lockManager;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -49,6 +58,7 @@ public class BufferPool {
         // some code goes here
         this.numPages = numPages;
         this.lruCache = new LRUCache(numPages);
+        this.lockManager = new LockManager();
     }
 
     public static int getPageSize() {
@@ -83,9 +93,25 @@ public class BufferPool {
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
             throws TransactionAbortedException, DbException {
         // some code goes here
-        // TODO 事务..
+        LockType lockType;
+        if(perm == Permissions.READ_ONLY){
+            lockType = LockType.SHARE_LOCK;
+        }else {
+            lockType = LockType.EXCLUSIVE_LOCK;
+        }
+        try {
+            // 如果获取lock失败（重试'RETRY_MAX'次）则直接放弃事务
+            if (!lockManager.acquireLock(pid,tid,lockType,0)){
+                // 获取锁失败，回滚事务
+                LogUtils.writeLog(LogUtils.ERROR,"tid:"+tid+"获取"+perm+"权限失败，进行回滚！！！");
+                throw new TransactionAbortedException();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.out.println("Method 「 getPage 」获取锁发生异常！！！");
+        }
         // bufferPool应直接放在直接内存
-        if (lruCache.get(pid) == null) {
+        if (!lruCache.contain(pid)) {
             DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page = file.readPage(pid);
             lruCache.put(pid, page);
@@ -95,37 +121,17 @@ public class BufferPool {
     }
 
     /**
-     * Releases the lock on a page.
-     * Calling this is very risky, and may result in wrong behavior. Think hard
-     * about who needs to call this and why, and why they can run the risk of
-     * calling it.
-     *
-     * @param tid the ID of the transaction requesting the unlock
-     * @param pid the ID of the page to unlock
-     */
-    public void unsafeReleasePage(TransactionId tid, PageId pid) {
-        // TODO: some code goes here
-        // not necessary for lab1|lab2
-    }
-
-    /**
      * Release all locks associated with a given transaction.
      *
      * @param tid the ID of the transaction requesting the unlock
      */
     public void transactionComplete(TransactionId tid) {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1|lab2
+        transactionComplete(tid,true);
     }
 
-    /**
-     * Return true if the specified transaction has a lock on the specified page
-     */
-    public boolean holdsLock(TransactionId tid, PageId p) {
-        // TODO: some code goes here
-        // not necessary for lab1|lab2
-        return false;
-    }
+
 
     /**
      * Commit or abort a given transaction; release all locks associated to
@@ -135,8 +141,34 @@ public class BufferPool {
      * @param commit a flag indicating whether we should commit or abort
      */
     public void transactionComplete(TransactionId tid, boolean commit) {
-        // TODO: some code goes here
+        // some code goes here
         // not necessary for lab1|lab2
+        if(commit){
+            try {
+                flushPages(tid);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+           rollBack(tid);
+        }
+        lockManager.releasePagesByTid(tid);
+    }
+
+    @SneakyThrows
+    public synchronized void rollBack(TransactionId tid){
+        for (Map.Entry<PageId, LRUCache.Node> group : lruCache.getEntrySet()) {
+            PageId pageId = group.getKey();
+            Page page = group.getValue().val;
+            if (tid.equals(page.isDirty())) {
+                int tableId = pageId.getTableId();
+                DbFile table = Database.getCatalog().getDatabaseFile(tableId);
+                Page readPage = table.readPage(pageId);
+                lruCache.removeByKey(group.getKey());
+                lruCache.put(pageId,readPage);
+            }
+        }
     }
 
     /**
@@ -154,12 +186,29 @@ public class BufferPool {
      * @param tableId the table to add the tuple to
      * @param t       the tuple to add
      */
-    public void insertTuple(TransactionId tid, int tableId, Tuple t)
+    public synchronized void insertTuple(TransactionId tid, int tableId, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        LogUtils.writeLog(LogUtils.INFO, "「 thread -"+Thread.currentThread().getName() +" 」:insert a t「"+t.toString()+"」 into table :" +
+                tableId+" and tid is :"+tid);
         DbFile f = Database.getCatalog().getDatabaseFile(tableId);
         updateBufferPool(f.insertTuple(tid, t), tid);
+    }
+
+    /**
+     * Releases the lock on a page.
+     * Calling this is very risky, and may result in wrong behavior. Think hard
+     * about who needs to call this and why, and why they can run the risk of
+     * calling it.
+     *
+     * @param tid the ID of the transaction requesting the unlock
+     * @param pid the ID of the page to unlock
+     */
+    public synchronized void unsafeReleasePage(TransactionId tid, PageId pid) {
+        // some code goes here
+        // not necessary for lab1|lab2
+        lockManager.releasePage(tid,pid);
     }
 
     /**
@@ -175,10 +224,11 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t   the tuple to delete
      */
-    public void deleteTuple(TransactionId tid, Tuple t)
+    public synchronized void deleteTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        LogUtils.writeLog(LogUtils.INFO,"「 thread -"+Thread.currentThread().getName() +" 」:delete a t「"+t.toString()+"」 and tid is :"+tid);
         DbFile updateFile = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
         List<Page> updatePages = updateFile.deleteTuple(tid, t);
         updateBufferPool(updatePages, tid);
@@ -190,7 +240,7 @@ public class BufferPool {
      * @param updatePages 需要变为脏页的页列表
      * @param tid         the transaction to updating.
      */
-    public void updateBufferPool(List<Page> updatePages, TransactionId tid) {
+    public void updateBufferPool(List<Page> updatePages, TransactionId tid) throws DbException {
         for (Page page : updatePages) {
             page.markDirty(true, tid);
             // update bufferPool
@@ -302,7 +352,7 @@ public class BufferPool {
         }
 
         public synchronized Page get(PageId key) {
-            if(map.containsKey(key)){
+            if(contain(key)){
                 remove(map.get(key));
                 moveToHead(map.get(key));
                 return map.get(key).val ;
@@ -312,24 +362,24 @@ public class BufferPool {
 
         }
 
-        public synchronized void put(PageId key, Page value) {
+        public synchronized void put(PageId key, Page value) throws DbException {
             Node newNode = new Node(key, value);
-            if(map.containsKey(key)){
+            if(contain(key)){
                 remove(map.get(key));
             }else{
                 size++;
                 if(size > cap){
                     Node removeNode = tail.pre;
                     // 丢弃不是脏页的页
-                    while (removeNode.val.isDirty() != null && removeNode != head){
+                    while (removeNode.val.isDirty() != null){
                         removeNode = removeNode.pre;
+                        if(removeNode == head || removeNode == tail){
+                            throw new DbException("没有合适的页存储空间或者所有页都为脏页！！");
+                        }
                     }
-                    if(removeNode != head && removeNode != tail){
-                        map.remove(tail.pre.key);
-                        remove(tail.pre);
-                        size--;
-                    }
-
+                    map.remove(removeNode.key);
+                    remove(removeNode);
+                    size--;
                 }
             }
             moveToHead(newNode);
@@ -342,8 +392,13 @@ public class BufferPool {
             next.pre = pre;
         }
         public synchronized void removeByKey(PageId key){
-            Node node = map.get(key);
-            remove(node);
+            Node node = getNodeByKey(key);
+            if(node != null){
+                remove(node);
+            }else {
+                LogUtils.writeLog(LogUtils.INFO,"「 LRU缓存 」:需要删除的节点已经不存在！");
+            }
+
         }
 
 
@@ -361,7 +416,28 @@ public class BufferPool {
             return this.size;
         }
 
+        public synchronized boolean contain(PageId key){
+            for (PageId pageId : map.keySet()) {
+                if (pageId.equals(key)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
+        /**
+         * 因为传进来的都是new需要做等值判断
+         */
+        public synchronized Node getNodeByKey(PageId key){
+            for (PageId pageId : map.keySet()) {
+                if (pageId.equals(key)) {
+                    return map.get(pageId);
+                }
+            }
+            return null;
+        }
+
+        @Data
         private static class Node{
             PageId key;
             Page val;
@@ -371,12 +447,159 @@ public class BufferPool {
                 this.key = key;
                 this.val = val;
             }
+
+            @Override
+            public String toString(){
+                return "Node: 「 key:"+ key +";value:" + val +" 」";
+            }
         }
 
         public Set<Map.Entry<PageId, Node>> getEntrySet(){
             return map.entrySet();
         }
+        @Override
+        public String toString(){
+            return "LRU: 「 cap:"+ cap +"size:" + size +" 」";
+        }
+
 
     }
+
+    @AllArgsConstructor
+    @Data
+    private static class PageLock{
+        private TransactionId tid;
+        private PageId pid;
+        private LockType type;
+
+    }
+
+    private static class LockManager {
+        @Getter
+        public ConcurrentHashMap<PageId, ConcurrentHashMap<TransactionId, PageLock>> lockMap;
+
+        public LockManager() {
+            lockMap = new ConcurrentHashMap<>();
+        }
+
+        /**
+         * Return true if the specified transaction has a lock on the specified page
+         */
+        public boolean holdsLock(TransactionId tid, PageId p) {
+            // some code goes here
+            // not necessary for lab1|lab2
+            if(lockMap.get(p) == null){
+                return false;
+            }
+            return lockMap.get(p).get(tid) != null;
+        }
+
+
+
+        public synchronized boolean acquireLock(PageId pageId, TransactionId tid, LockType requestLock, int reTry) throws TransactionAbortedException, InterruptedException {
+            // 重传达到3次
+            if (reTry == RETRY_MAX) return false;
+            // 用于打印log
+            // 页面上不存在锁
+            if (lockMap.get(pageId) == null) {
+                return putLock(tid,pageId,requestLock);
+            }
+
+            // 页面上存在锁
+            ConcurrentHashMap<TransactionId, PageLock> tidLocksMap = lockMap.get(pageId);
+
+            if (tidLocksMap.get(tid) == null) {
+                // 页面上的锁不是自己的
+                // 请求的为X锁
+                if (requestLock == LockType.EXCLUSIVE_LOCK) {
+                    wait(X_LOCK_WAIT);
+                    return acquireLock(pageId, tid, requestLock, reTry + 1);
+                } else if (requestLock == LockType.SHARE_LOCK) {
+                    // 页面上是否都是读锁 -> 页面上的锁大于1个，就都是读锁
+                    // 因为排它锁只能被一个事务占有
+                    if (tidLocksMap.size() > 1) {
+                        // 都是读锁直接获取
+                        return putLock(tid,pageId,requestLock);
+                    } else {
+                        Collection<PageLock> values = tidLocksMap.values();
+                        for (PageLock value : values) {
+                            // 存在的唯一的一个锁为X锁
+                            if (value.getType() == LockType.EXCLUSIVE_LOCK) {
+                                wait(S_LOCK_WAIT);
+                                return acquireLock(pageId, tid, requestLock, reTry + 1);
+                            } else {
+                                return putLock(tid,pageId,requestLock);
+                            }
+                        }
+                    }
+                }
+            }else {
+                if (requestLock == LockType.SHARE_LOCK) {
+                    tidLocksMap.remove(tid);
+                    return putLock(tid,pageId,requestLock);
+                }else {
+                    // 判断自己的锁是否为排它锁，如果是直接获取
+                    if(tidLocksMap.get(tid).getType() == LockType.EXCLUSIVE_LOCK){
+                        return true;
+                    }else {
+                        // 拥有的是读锁，判断是否还存在别的读锁
+                        if(tidLocksMap.size() > 1){
+                            wait(S_LOCK_WAIT);
+                            return acquireLock(pageId, tid, requestLock, reTry + 1);
+                        }else{
+                            // 只有自己拥有一个读锁，进行锁升级
+                            tidLocksMap.remove(tid);
+                            return putLock(tid,pageId,requestLock);
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        public boolean putLock(TransactionId tid, PageId pageId, LockType requestLock){
+            ConcurrentHashMap<TransactionId, PageLock> tidLocksMap = lockMap.get(pageId);
+            // 页面上一个锁都没
+            if(tidLocksMap == null){
+                tidLocksMap = new ConcurrentHashMap<>();
+                lockMap.put(pageId,tidLocksMap);
+            }
+            PageLock pageLock = new PageLock(tid, pageId, requestLock);
+            tidLocksMap.put(tid, pageLock);
+            lockMap.put(pageId, tidLocksMap);
+            return true;
+        }
+
+
+        /**
+         * 释放某个事务上所有页的锁
+         */
+        public synchronized void releasePagesByTid(TransactionId tid){
+            Set<PageId> pageIds = lockMap.keySet();
+            for (PageId pageId : pageIds){
+                releasePage(tid,pageId);
+            }
+        }
+
+
+        /**
+         * 释放某个页上tid的锁
+         */
+        public synchronized void releasePage(TransactionId tid, PageId pid) {
+            if (holdsLock(tid,pid)){
+                ConcurrentHashMap<TransactionId,PageLock> tidLocks = lockMap.get(pid);
+                tidLocks.remove(tid);
+                if (tidLocks.size() == 0){
+                    lockMap.remove(pid);
+                }
+                // 释放锁时就唤醒正在等待的线程,因为wait与notifyAll都需要在同步代码块里，所以需要加synchronized
+                this.notifyAll();
+            }
+        }
+
+
+    }
+
+
 
 }

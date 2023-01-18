@@ -230,10 +230,14 @@ public class HeapFile implements DbFile {
         ArrayList<Page> pageList= new ArrayList<Page>();
         for(int i=0;i<numPages();++i){
             // took care of getting new page
+            HeapPageId heapPageId = new HeapPageId(this.getId(), i);
             HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid,
-                    new HeapPageId(this.getId(),i),Permissions.READ_WRITE);
-            if(p.getNumUnusedSlots() == 0)
+                    heapPageId,Permissions.READ_WRITE);
+            if(p.getNumUnusedSlots() == 0){
+                // lab4 解锁
+                Database.getBufferPool().unsafeReleasePage(tid,heapPageId);
                 continue;
+            }
             p.insertTuple(t);
             pageList.add(p);
             return pageList;
@@ -247,6 +251,7 @@ public class HeapFile implements DbFile {
         HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid,
                 new HeapPageId(getId(),numPages()-1),Permissions.READ_WRITE);
         p.insertTuple(t);
+        p.markDirty(true, tid);
         pageList.add(p);
         return pageList;
 
@@ -261,6 +266,7 @@ public class HeapFile implements DbFile {
         HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid,
                 t.getRecordId().getPageId(),Permissions.READ_WRITE);
         page.deleteTuple(t);
+        page.markDirty(true, tid);
         return Collections.singletonList(page);
     }
 

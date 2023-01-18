@@ -119,6 +119,7 @@ public class Tuple implements Serializable {
             stringBuilder.append("\n");
             i++;
         }
+        stringBuilder.delete(stringBuilder.length()-1,stringBuilder.length());
         return stringBuilder.toString();
     }
 

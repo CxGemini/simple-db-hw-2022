@@ -34,7 +34,7 @@ public class HeapPageId implements PageId {
      * @return the table associated with this PageId
      */
     public int getTableId() {
-        // TODO: some code goes here
+        // some code goes here
         return tableId;
     }
 
@@ -43,7 +43,7 @@ public class HeapPageId implements PageId {
      *         this PageId
      */
     public int getPageNumber() {
-        // TODO: some code goes here
+        // some code goes here
         return pgNo;
     }
 
@@ -75,14 +75,11 @@ public class HeapPageId implements PageId {
      *         ids are the same)
      */
     public boolean equals(Object o) {
-        // TODO: some code goes here
+        // some code goes here
         if (!(o instanceof  HeapPageId)) { return false; }
 
         HeapPageId other = (HeapPageId) o;
-        if (this.getPageNumber() == other.getPageNumber() && this.getTableId() == other.getTableId()) {
-            return true;
-        }
-        return false;
+        return this.getPageNumber() == other.getPageNumber() && this.getTableId() == other.getTableId();
     }
 
     /**

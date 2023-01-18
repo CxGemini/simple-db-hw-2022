@@ -1,5 +1,6 @@
 package simpledb.index;
 
+import simpledb.LogUtils;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Type;
@@ -689,7 +690,10 @@ public class BTreeUtility {
 
         public void run() {
             try {
+
+
                 Tuple t = BTreeUtility.getBTreeTuple(tupdata);
+                LogUtils.writeLog(LogUtils.TEST,"「 thread -"+Thread.currentThread().getName() +" 」:delete a t「"+t.toString()+"」 and tid is :"+tid);
                 Database.getBufferPool().insertTuple(tid, bf.getId(), t);
                 Database.getBufferPool().transactionComplete(tid);
                 List<Integer> tuple = tupleToList(t);

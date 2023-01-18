@@ -184,12 +184,20 @@ public class BTreeTest extends SimpleDbTestBase {
 			DbFileIterator it = bf.indexIterator(tid, ipred);
 			it.open();
 			boolean found = false;
+			System.out.println("tuple:"+tuple);
 			while(it.hasNext()) {
 				Tuple t = it.next();
+				System.out.println("t:"+t.toString());
+				System.out.println("--------------------------------------");
 				if(tuple.equals(SystemTestUtil.tupleToList(t))) {
 					found = true;
 					break;
+				}else{
+
 				}
+			}
+			if(!found){
+				System.out.println("...");
 			}
 			assertTrue(found);
 			it.close();

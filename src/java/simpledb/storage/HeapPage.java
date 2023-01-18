@@ -317,6 +317,7 @@ public class HeapPage implements Page {
                 t.setRecordId(new RecordId(pid,i));
                 tuples[i] = t;
                 break;
+
             }
         }
 
@@ -401,7 +402,10 @@ public class HeapPage implements Page {
         List<Tuple> tupleList = new ArrayList<>();
         // 判断是否在empty slots
         for(int i = 0; i < numSlots ;i++){
-            if(isSlotUsed(i)) tupleList.add(tuples[i]);
+            if(isSlotUsed(i)) {
+                tupleList.add(tuples[i]);
+            }
+
         }
         return tupleList.iterator();
     }
