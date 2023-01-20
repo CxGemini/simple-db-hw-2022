@@ -32,10 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BTreeFile implements DbFile {
 
+
     private final File f;
     private final TupleDesc td;
     private final int tableid;
     private final int keyField;
+
+    private Map<PageId, Page> localReadPage = new ConcurrentHashMap<>();
 
     /**
      * Constructs a B+ tree file backed by the specified file.
@@ -498,11 +501,14 @@ public class BTreeFile implements DbFile {
             throws DbException, TransactionAbortedException {
         if (dirtypages.containsKey(pid)) {
             return dirtypages.get(pid);
+        } else if(localReadPage.containsKey(pid) && perm != Permissions.READ_WRITE){
+            return localReadPage.get(pid);
         } else {
             Page p = Database.getBufferPool().getPage(tid, pid, perm);
             if (perm == Permissions.READ_WRITE) {
                 dirtypages.put(pid, p);
             }
+            localReadPage.put(pid,p);
             return p;
         }
     }
@@ -794,7 +800,7 @@ public class BTreeFile implements DbFile {
      * @throws TransactionAbortedException
      * @see #updateParentPointers(TransactionId, Map, BTreeInternalPage)
      */
-    public     void stealFromRightInternalPage(TransactionId tid, Map<PageId, Page> dirtypages,
+    public void stealFromRightInternalPage(TransactionId tid, Map<PageId, Page> dirtypages,
                                            BTreeInternalPage page, BTreeInternalPage rightSibling, BTreeInternalPage parent,
                                            BTreeEntry parentEntry) throws DbException, TransactionAbortedException {
         // some code goes here
@@ -850,7 +856,7 @@ public class BTreeFile implements DbFile {
      * @throws TransactionAbortedException
      * @see #deleteParentEntry(TransactionId, Map, BTreePage, BTreeInternalPage, BTreeEntry)
      */
-    public    void mergeLeafPages(TransactionId tid, Map<PageId, Page> dirtypages,
+    public void mergeLeafPages(TransactionId tid, Map<PageId, Page> dirtypages,
                                BTreeLeafPage leftPage, BTreeLeafPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry)
             throws DbException, IOException, TransactionAbortedException {
 
@@ -902,7 +908,7 @@ public class BTreeFile implements DbFile {
      * @see #deleteParentEntry(TransactionId, Map, BTreePage, BTreeInternalPage, BTreeEntry)
      * @see #updateParentPointers(TransactionId, Map, BTreeInternalPage)
      */
-    public    void mergeInternalPages(TransactionId tid, Map<PageId, Page> dirtypages,
+    public void mergeInternalPages(TransactionId tid, Map<PageId, Page> dirtypages,
                                    BTreeInternalPage leftPage, BTreeInternalPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry)
             throws DbException, IOException, TransactionAbortedException {
 
@@ -949,7 +955,7 @@ public class BTreeFile implements DbFile {
      * @throws TransactionAbortedException
      * @see #handleMinOccupancyPage(TransactionId, Map, BTreePage)
      */
-    private void deleteParentEntry(TransactionId tid, Map<PageId, Page> dirtypages,
+    private synchronized void deleteParentEntry(TransactionId tid, Map<PageId, Page> dirtypages,
                                    BTreePage leftPage, BTreeInternalPage parent, BTreeEntry parentEntry)
             throws DbException, IOException, TransactionAbortedException {
 

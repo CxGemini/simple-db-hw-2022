@@ -20,8 +20,8 @@ public class BTreeLeafPage extends BTreePage {
     private final Tuple[] tuples;
     private final int numSlots;
 
-    private int leftSibling; // leaf node or 0
-    private int rightSibling; // leaf node or 0
+    private volatile int leftSibling; // leaf node or 0
+    private volatile int rightSibling; // leaf node or 0
 
     public void checkRep(int fieldid, Field lowerBound, Field upperBound, boolean checkoccupancy, int depth) {
         Field prev = lowerBound;
@@ -286,7 +286,7 @@ public class BTreeLeafPage extends BTreePage {
      * @throws DbException if this tuple is not on this page, or tuple slot is
      *                     already empty.
      */
-    public void deleteTuple(Tuple t) throws DbException {
+    public synchronized void deleteTuple(Tuple t) throws DbException {
         RecordId rid = t.getRecordId();
         if (rid == null)
             throw new DbException("tried to delete tuple with null rid");
@@ -307,7 +307,7 @@ public class BTreeLeafPage extends BTreePage {
      * @throws DbException if the page is full (no empty slots) or tupledesc
      *                     is mismatch.
      */
-    public void insertTuple(Tuple t) throws DbException {
+    public synchronized void insertTuple(Tuple t) throws DbException {
         if (!t.getTupleDesc().equals(td))
             throw new DbException("type mismatch, in addTuple");
 
@@ -362,7 +362,7 @@ public class BTreeLeafPage extends BTreePage {
      * Move a record from one slot to another slot, and update the corresponding
      * headers and RecordId
      */
-    private void moveRecord(int from, int to) {
+    private synchronized void moveRecord(int from, int to) {
         if (!isSlotUsed(to) && isSlotUsed(from)) {
             markSlotUsed(to, true);
             RecordId rid = new RecordId(pid, to);
@@ -466,7 +466,7 @@ public class BTreeLeafPage extends BTreePage {
     /**
      * Abstraction to fill or clear a slot on this page.
      */
-    private void markSlotUsed(int i, boolean value) {
+    private  void markSlotUsed(int i, boolean value) {
         int headerbit = i % 8;
         int headerbyte = (i - headerbit) / 8;
 

@@ -693,7 +693,7 @@ public class BTreeUtility {
 
 
                 Tuple t = BTreeUtility.getBTreeTuple(tupdata);
-                LogUtils.writeLog(LogUtils.TEST,"「 thread -"+Thread.currentThread().getName() +" 」:delete a t「"+t.toString()+"」 and tid is :"+tid);
+                LogUtils.writeLog(LogUtils.TEST,"「 thread -"+Thread.currentThread().getName() +" 」:insert a t「"+t.toString()+"」 and tid is :"+tid);
                 Database.getBufferPool().insertTuple(tid, bf.getId(), t);
                 Database.getBufferPool().transactionComplete(tid);
                 List<Integer> tuple = tupleToList(t);
@@ -710,6 +710,16 @@ public class BTreeUtility {
                 }
 
                 Database.getBufferPool().transactionComplete(tid, false);
+                LogUtils.writeLog(LogUtils.ERROR,"获取不到锁，回滚后重新进行事务！！！");
+                try {
+                    synchronized (this){
+                        wait(1000);
+                        run();
+                    }
+
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         }
 

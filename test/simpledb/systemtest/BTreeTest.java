@@ -1,5 +1,6 @@
 package simpledb.systemtest;
 
+import simpledb.LogUtils;
 import simpledb.common.Database;
 import simpledb.execution.IndexPredicate;
 import simpledb.index.BTreeFile;
@@ -107,6 +108,7 @@ public class BTreeTest extends SimpleDbTestBase {
 		// now insert some random tuples
 		System.out.println("Inserting tuples...");
     	List<BTreeInserter> insertThreads = new ArrayList<>();
+		LogUtils.writeLog(LogUtils.TEST,insertedTuples.toString());
 		for(int i = 0; i < 200; i++) {
 			BTreeInserter bi = startInserter(bf, getRandomTupleData(), insertedTuples);
 			insertThreads.add(bi);

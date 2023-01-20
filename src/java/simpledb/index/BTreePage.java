@@ -26,7 +26,7 @@ public abstract class BTreePage implements Page {
     protected final TupleDesc td;
     protected final int keyField;
 
-    protected int parent; // parent is always internal node or 0 for root node
+    protected volatile int parent; // parent is always internal node or 0 for root node
     protected byte[] oldData;
     protected final Byte oldDataLock = (byte) 0;
 

@@ -346,7 +346,7 @@ public class BTreeInternalPage extends BTreePage {
      * @throws DbException if this entry is not on this page, or entry slot is
      *                     already empty.
      */
-    private void deleteEntry(BTreeEntry e, boolean deleteRightChild) throws DbException {
+    private synchronized void deleteEntry(BTreeEntry e, boolean deleteRightChild) throws DbException {
         RecordId rid = e.getRecordId();
         if (rid == null)
             throw new DbException("tried to delete entry with null rid");
@@ -405,7 +405,7 @@ public class BTreeInternalPage extends BTreePage {
      *                     already empty, or updating this key would put the entry out of
      *                     order on the page
      */
-    public void updateEntry(BTreeEntry e) throws DbException {
+    public synchronized void updateEntry(BTreeEntry e) throws DbException {
         RecordId rid = e.getRecordId();
         if (rid == null)
             throw new DbException("tried to update entry with null rid");
@@ -445,7 +445,7 @@ public class BTreeInternalPage extends BTreePage {
      * @throws DbException if the page is full (no empty slots) or key field type,
      *                     table id, or child page category is a mismatch, or the entry is invalid
      */
-    public void insertEntry(BTreeEntry e) throws DbException {
+    public synchronized void insertEntry(BTreeEntry e) throws DbException {
         if (!e.getKey().getType().equals(td.getFieldType(keyField)))
             throw new DbException("key field type mismatch, in insertEntry");
 
@@ -551,7 +551,7 @@ public class BTreeInternalPage extends BTreePage {
      * Move an entry from one slot to another slot, and update the corresponding
      * headers
      */
-    private void moveEntry(int from, int to) {
+    private synchronized void moveEntry(int from, int to) {
         if (!isSlotUsed(to) && isSlotUsed(from)) {
             markSlotUsed(to, true);
             keys[to] = keys[from];

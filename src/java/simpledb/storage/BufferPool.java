@@ -6,6 +6,7 @@ import simpledb.LogUtils;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Permissions;
+import simpledb.index.BTreePageId;
 import simpledb.storage.dbfile.DbFile;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
@@ -41,7 +42,7 @@ public class BufferPool {
     private static final int DEFAULT_PAGE_SIZE = 4096;
     private static final int X_LOCK_WAIT = 100;
     private static final int S_LOCK_WAIT = 100;
-    private static final int RETRY_MAX = 1;
+    private static final int RETRY_MAX = 3;
     private static int pageSize = DEFAULT_PAGE_SIZE;
     private final int numPages;
 
@@ -94,6 +95,10 @@ public class BufferPool {
             throws TransactionAbortedException, DbException {
         // some code goes here
         LockType lockType;
+        int retry = 2;
+        if(pid instanceof BTreePageId){
+            retry = 2;
+        }
         if(perm == Permissions.READ_ONLY){
             lockType = LockType.SHARE_LOCK;
         }else {
@@ -101,7 +106,8 @@ public class BufferPool {
         }
         try {
             // 如果获取lock失败（重试'RETRY_MAX'次）则直接放弃事务
-            if (!lockManager.acquireLock(pid,tid,lockType,0)){
+            if (!lockManager.acquireLock(pid,tid,lockType,retry)){
+
                 // 获取锁失败，回滚事务
                 LogUtils.writeLog(LogUtils.ERROR,"tid:"+tid+"获取"+perm+"权限失败，进行回滚！！！");
                 throw new TransactionAbortedException();
