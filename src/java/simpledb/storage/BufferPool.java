@@ -6,16 +6,17 @@ import simpledb.LogUtils;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Permissions;
+import simpledb.execution.SeqScan;
 import simpledb.index.BTreePageId;
 import simpledb.storage.dbfile.DbFile;
+import simpledb.storage.dbfile.HeapFile;
+import simpledb.storage.iterator.DbFileIterator;
+import simpledb.transaction.Transaction;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -271,6 +272,7 @@ public class BufferPool {
             }
         }
 
+
     }
 
     /**
@@ -304,11 +306,33 @@ public class BufferPool {
             return;
         }
         TransactionId tid = target.isDirty();
+
+
         if (tid != null) {
             Page before = target.getBeforeImage();
             Database.getLogFile().logWrite(tid, before,target);
             Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(target);
         }
+    }
+
+    void look(HeapFile hf, Transaction t, int v1, boolean present)
+            throws DbException, TransactionAbortedException {
+        int count = 0;
+        SeqScan scan = new SeqScan(t.getId(), hf.getId(), "");
+        scan.open();
+        while(scan.hasNext()){
+            Tuple tu = scan.next();
+            int x = ((IntField)tu.getField(0)).getValue();
+            if(x == v1)
+                count = count + 1;
+        }
+        scan.close();
+        if(count > 1)
+            throw new RuntimeException("LogTest: tuple repeated");
+        if(present && count < 1)
+            throw new RuntimeException("LogTest: tuple missing");
+        if(!present && count > 0)
+            throw new RuntimeException("LogTest: tuple present but shouldn't be");
     }
 
     /**
@@ -322,7 +346,7 @@ public class BufferPool {
             Page flushPage = group.getValue().val;
             TransactionId flushPageDirty = flushPage.isDirty();
             Page before = flushPage.getBeforeImage();
-            // 涉及到事务就应该setBeforeImage
+            // 涉及到事务提交就应该setBeforeImage，更新数据，方便后续的事务终止能回退此版本
             flushPage.setBeforeImage();
             if (flushPageDirty != null && flushPageDirty.equals(tid)) {
                 Database.getLogFile().logWrite(tid, before, flushPage);
@@ -401,6 +425,8 @@ public class BufferPool {
             Node node = getNodeByKey(key);
             if(node != null){
                 remove(node);
+                map.remove(Objects.requireNonNull(get(key)).getId());
+
             }else {
                 LogUtils.writeLog(LogUtils.INFO,"「 LRU缓存 」:需要删除的节点已经不存在！");
             }

@@ -83,9 +83,9 @@ public class LogTest extends SimpleDbTestBase {
     }
 
     void abort(Transaction t)
-            throws IOException {
+            throws IOException, TransactionAbortedException, DbException {
         // t.transactionComplete(true); // abort
-        Database.getBufferPool().flushAllPages(); // XXX defeat NO-STEAL-based abort
+        Database.getBufferPool().flushAllPages();// XXX defeat NO-STEAL-based abort
         Database.getLogFile().logAbort(t.getId()); // does rollback too
         Database.getBufferPool().flushAllPages(); // prevent NO-STEAL-based abort from
         // un-doing the rollback
@@ -228,7 +228,7 @@ public class LogTest extends SimpleDbTestBase {
 
         // *** Test:
         // T1 start, T2 start and commit, T1 abort
-
+        //
         Transaction t1 = new Transaction();
         t1.start();
         insertRow(hf1, t1, 3);
